@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "auth-system-pro"
+version = "0.1.0"
+description = "Professional Authentication System built with FastAPI and SQLModel"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]==0.115.1",
+    "sqlmodel==0.0.22",
+    "asyncpg==0.31.0",
+    "alembic==1.14.0",
+    "argon2-cffi==23.2.0",
+    "PyJWT==2.10.1",
+    "python-dotenv==1.0.1",
+    "pydantic-settings==2.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.2",
+    "pytest-asyncio==0.24.0",
+    "ruff==0.8.3",
+    "mypy==1.13.0",
+    "httpx==0.27.0",
+    "aiosqlite==0.20.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
