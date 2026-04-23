@@ -1,255 +1,172 @@
-# Auth System PRO - Checklist de Implementação
+# Auth System PRO v0.2.0 - Checklist de Implementação
 
 ## Status: ✅ 100% COMPLETO
 
+---
+
 ### Arquivos de Configuração (8)
-- [x] pyproject.toml - Dependências e build config
-- [x] .env.example - Variáveis de ambiente
-- [x] pytest.ini - Configuração de testes
+- [x] pyproject.toml - Dependências, build config, ruff e mypy
+- [x] .env.example - Variáveis de ambiente (incluindo CORS_ORIGINS, ENVIRONMENT)
+- [x] pytest.ini - Configuração de testes (asyncio_mode=auto)
 - [x] alembic.ini - Configuração de migrations
-- [x] docker-compose.yml - Orquestração de containers
-- [x] Dockerfile - Imagem Docker
-- [x] .gitignore - Arquivos ignorados
+- [x] docker-compose.yml - Orquestração (API + PostgreSQL, networks, restart)
+- [x] Dockerfile - Multi-stage build, non-root user
+- [x] .gitignore - Arquivos ignorados (inclui .gemini/)
 - [x] requirements-dev.txt - Dependências de desenvolvimento
 
 ### Código-Fonte - API Routes (4)
 - [x] src/api/__init__.py
 - [x] src/api/routes/__init__.py
-- [x] src/api/routes/auth.py - Rotas de autenticação (register, login, refresh, logout)
-- [x] src/api/routes/users.py - Rota de usuário autenticado (get /me)
+- [x] src/api/routes/auth.py - Thin HTTP layer (register, login, refresh, logout)
+- [x] src/api/routes/users.py - GET/PATCH /me, PUT /me/password, admin GET /, PUT /{id}/status
+
+### Código-Fonte - Services (3) — **NOVO em v0.2.0**
+- [x] src/services/__init__.py
+- [x] src/services/auth_service.py - Lógica de autenticação centralizada
+- [x] src/services/user_service.py - CRUD de usuários, troca de senha
 
 ### Código-Fonte - Core (4)
 - [x] src/core/__init__.py
-- [x] src/core/config.py - Pydantic Settings
-- [x] src/core/security.py - Hash Argon2, JWT, decode
-- [x] src/core/dependencies.py - Dependency injection (get_current_user)
+- [x] src/core/config.py - Pydantic Settings (JWT_ALGORITHM, CORS_ORIGINS, ENVIRONMENT)
+- [x] src/core/security.py - Hash Argon2, JWT com jti, encode/decode com type validation
+- [x] src/core/dependencies.py - get_current_user + require_admin (RBAC)
 
 ### Código-Fonte - Models (2)
 - [x] src/models/__init__.py
-- [x] src/models/models.py - User, RefreshToken, PasswordResetToken, ActivityLog
+- [x] src/models/models.py - User (com updated_at), RefreshToken, PasswordResetToken, ActivityLog
 
 ### Código-Fonte - Schemas (2)
 - [x] src/schemas/__init__.py
-- [x] src/schemas/schemas.py - Request/Response Pydantic models
+- [x] src/schemas/schemas.py - Register, Login, Token (com refresh_token!), User, PasswordChange, etc.
 
 ### Código-Fonte - Database (2)
 - [x] src/db/__init__.py
-- [x] src/db/session.py - Async engine, sessionmaker, create_db_tables
+- [x] src/db/session.py - Async engine, sessionmaker, create/drop tables
 
 ### Código-Fonte - Main (2)
 - [x] src/__init__.py
-- [x] src/main.py - FastAPI app, routers, exception handlers, lifespan
+- [x] src/main.py - FastAPI app, CORS middleware, routers, exception handlers
 
-### Testes (2)
+### Testes (3) — **EXPANDIDO em v0.2.0**
 - [x] tests/__init__.py
-- [x] tests/test_auth.py - Testes unitários (8 testes)
+- [x] tests/conftest.py - Fixtures compartilhadas (session, client, registered_user)
+- [x] tests/test_auth.py - **18 testes** (register, login, refresh, logout, /me, password)
 
 ### Alembic Migrations (2)
-- [x] alembic/env.py - Configuração de migrations
-- [x] alembic/versions/ - Pasta para migrações (vazia inicialmente)
+- [x] alembic/env.py - Configuração com auto-detect de driver
+- [x] alembic/versions/ - Pasta para migrações
 
 ### Scripts & Utilitários (1)
 - [x] scripts/setup.sh - Script de setup do projeto
 
-### Documentação (3)
-- [x] README.md - Visão geral
-- [x] SETUP_GUIDE.md - Guia completo de setup e uso
+### Documentação (5)
+- [x] README.md - Visão geral completa (v0.2.0)
+- [x] CHECKLIST.md - Este arquivo
+- [x] SETUP_GUIDE.md - Guia de setup e uso
 - [x] PROJECT_SUMMARY.md - Resumo dos recursos
+- [x] planejamento/ - Documentação de planejamento (4 arquivos)
 
 ---
 
 ## Funcionalidades Implementadas
 
 ### Autenticação (✅ Completo)
-- [x] Registro de usuário
-  - [x] Validação de email único
-  - [x] Validação de email formato
-  - [x] Validação de senha (mínimo 8 caracteres)
-  - [x] Hash de senha com Argon2
-  - [x] Log de atividade
-  - [x] Retorna access token
+- [x] Registro de usuário (validação email/senha, Argon2, activity log)
+- [x] Login (verify, tokens, activity log)
+- [x] Refresh Token Rotation (revoga antigo, emite novo par)
+- [x] **Token Reuse Detection** — Revoga TODOS os tokens se token revogado for reutilizado
+- [x] Logout (revoga refresh token no banco)
 
-- [x] Login
-  - [x] Busca usuário por email
-  - [x] Verifica senha com Argon2
-  - [x] Verifica se usuário está ativo
-  - [x] Cria access token JWT
-  - [x] Cria refresh token JWT
-  - [x] Armazena refresh token hasheado
-  - [x] Log de atividade
-  - [x] Retorna tokens
+### Autorização / RBAC (✅ Completo)
+- [x] `get_current_user` — Valida Bearer token + busca user
+- [x] **`require_admin`** — Dependency que exige role="admin"
+- [x] Rotas de usuário protegidas por Bearer
+- [x] Rotas admin protegidas por role
 
-- [x] Refresh Token
-  - [x] Extrai refresh token do request
-  - [x] Valida token JWT
-  - [x] Busca no banco de dados
-  - [x] Verifica se não foi revogado
-  - [x] Verifica expiração
-  - [x] Revoga token antigo
-  - [x] Cria novo token
-  - [x] Log de atividade
-
-- [x] Logout
-  - [x] Extrai refresh token
-  - [x] Marca como revogado no banco
-  - [x] Log de atividade
-
-### Autorização (✅ Completo)
-- [x] Dependency get_current_user
-  - [x] Extrai Bearer token do header
-  - [x] Decodifica JWT
-  - [x] Busca usuário no banco
-  - [x] Verifica se está ativo
-  - [x] Lança 401 se inválido
-
-- [x] Rota GET /me
-  - [x] Retorna dados do usuário autenticado
-  - [x] Requer autenticação Bearer
-
-### Modelos de Banco de Dados (✅ Completo)
-- [x] User
-  - [x] id (UUID primary key)
-  - [x] email (unique, indexed)
-  - [x] password_hash
-  - [x] role (default: "user")
-  - [x] is_active (default: True)
-  - [x] created_at (timestamp)
-  - [x] Relacionamentos com RefreshToken, PasswordResetToken, ActivityLog
-
-- [x] RefreshToken
-  - [x] id (UUID primary key)
-  - [x] user_id (FK para User)
-  - [x] token_hash
-  - [x] revogado (bool, default: False)
-  - [x] expira_em (datetime)
-  - [x] ip_address
-  - [x] user_agent
-  - [x] criado_em (timestamp)
-
-- [x] PasswordResetToken
-  - [x] id (UUID primary key)
-  - [x] user_id (FK para User)
-  - [x] token_hash
-  - [x] usado (bool, default: False)
-  - [x] expira_em (datetime)
-  - [x] criado_em (timestamp)
-
-- [x] ActivityLog
-  - [x] id (UUID primary key)
-  - [x] user_id (FK para User)
-  - [x] action (string)
-  - [x] ip_address
-  - [x] user_agent
-  - [x] status (string)
-  - [x] timestamp
-
-### Validações (✅ Completo)
-- [x] Email válido (Pydantic EmailStr)
-- [x] Senha mínimo 8 caracteres
-- [x] Email único ao registrar
-- [x] Senhas não armazenadas em texto plano
-- [x] Token não armazenado em texto plano
+### Gestão de Usuários (✅ Completo)
+- [x] GET /me — Perfil do usuário autenticado
+- [x] PATCH /me — Atualizar email
+- [x] PUT /me/password — Trocar senha (verifica senha atual)
+- [x] GET / — Listar todos (admin only)
+- [x] PUT /{id}/status — Ativar/desativar usuário (admin only)
 
 ### Segurança (✅ Completo)
-- [x] Argon2 para hash de senha
-- [x] JWT HS256 para tokens
-- [x] Expiração de tokens
-- [x] Revogação de refresh tokens
-- [x] Bearer token authentication
-- [x] CORS ready
+- [x] Argon2 para hash de senha (com rehash check)
+- [x] JWT HS256 com `jti` (UUID único por token)
+- [x] Expiração configurável (access: 30min, refresh: 7 dias)
+- [x] Token type validation (access vs refresh)
+- [x] SECRET_KEY forte (256-bit)
+- [x] CORS middleware configurável
 - [x] Exception handling global
-- [x] Validação de entrada
+- [x] Non-root Docker user
 
-### Testes (✅ Completo)
-- [x] Teste de registro bem-sucedido
-- [x] Teste de email duplicado
-- [x] Teste de email inválido
-- [x] Teste de senha curta
-- [x] Teste de login bem-sucedido
-- [x] Teste de credenciais inválidas
-- [x] Teste de usuário inexistente
-- [x] Teste de health check
-
-### Docker (✅ Completo)
-- [x] Dockerfile com Python 3.12
-- [x] docker-compose com API, PostgreSQL, Redis
-- [x] Volumes persistentes
-- [x] Environment variables
-
-### Documentação (✅ Completo)
-- [x] README com visão geral
-- [x] SETUP_GUIDE com instruções detalhadas
-- [x] PROJECT_SUMMARY com recursos
-- [x] Exemplos de requisições curl
-- [x] Guia de testes
-- [x] Variáveis de ambiente documentadas
+### Testes (✅ 18/18)
+- [x] Register: sucesso, email duplicado (409), email inválido, senha curta
+- [x] Login: sucesso, senha errada, usuário inexistente
+- [x] Refresh: sucesso (rotation), reuso de token revogado (401), token inválido
+- [x] Logout: sucesso + verificação que refresh não funciona mais
+- [x] /me: autenticado, sem token (403), token inválido (401)
+- [x] Password: troca com sucesso + login com nova senha, senha atual errada
+- [x] System: health check, root endpoint
 
 ---
 
 ## Endpoints API
 
-### Autenticação
-- [x] POST /api/v1/auth/register
-- [x] POST /api/v1/auth/login
-- [x] POST /api/v1/auth/refresh
-- [x] POST /api/v1/auth/logout
+### Autenticação (4)
+- [x] POST /api/v1/auth/register → 201
+- [x] POST /api/v1/auth/login → 200
+- [x] POST /api/v1/auth/refresh → 200
+- [x] POST /api/v1/auth/logout → 200
 
-### Usuários
-- [x] GET /api/v1/users/me
+### Usuários (5)
+- [x] GET /api/v1/users/me → 200
+- [x] PATCH /api/v1/users/me → 200
+- [x] PUT /api/v1/users/me/password → 200
+- [x] GET /api/v1/users/ → 200 (admin)
+- [x] PUT /api/v1/users/{id}/status → 200 (admin)
 
-### Sistema
+### Sistema (4)
 - [x] GET /health
 - [x] GET /
+- [x] GET /docs (Swagger)
+- [x] GET /redoc
 
 ---
 
 ## Qualidade de Código
 
-- [x] Imports organizados e corretos
-- [x] Type hints em Python 3.12+
-- [x] Docstrings em funções
-- [x] Nomes descritivos
-- [x] Separação de responsabilidades
-- [x] DRY (Don't Repeat Yourself)
-- [x] Async/await em operações de banco
-- [x] Tratamento de erros apropriado
-- [x] Sem hardcodes
+- [x] **Service Layer** — Separação rotas ↔ lógica
+- [x] **DRY** — Token creation extraído para `_create_and_store_tokens()`
+- [x] **Campos padronizados** — Todos em inglês (is_revoked, expires_at, created_at)
+- [x] **JWT_ALGORITHM centralizado** — Em config, não hardcoded
+- [x] **Pydantic v2** — `model_config` em vez de inner `Config` class
+- [x] **Type hints** — Python 3.12+ syntax
+- [x] **Docstrings** — Em todas as funções públicas
+- [x] **Logging** — Structured com lazy formatting
+- [x] **conftest.py** — Fixtures reutilizáveis nos testes
+
+---
+
+## Resumo Estatístico
+
+| Métrica | v0.1.0 | v0.2.0 |
+| :--- | :---: | :---: |
+| Arquivos Python | ~20 | ~25 |
+| Testes | 8 | **18** |
+| Endpoints | 7 | **13** |
+| Modelos | 4 | 4 |
+| Services | 0 | **2** |
+| Cobertura de fluxos | ~40% | **~90%** |
 
 ---
 
 ## Próximos Passos (Opcional)
 
 - [ ] Email verification ao registrar
-- [ ] Password reset endpoint
-- [ ] Rate limiting em login
-- [ ] 2FA (Two-Factor Authentication)
+- [ ] Password reset endpoint (model já existe)
+- [ ] Rate limiting em login (Redis)
+- [ ] 2FA (TOTP)
 - [ ] OAuth2 (Google, GitHub)
-- [ ] Admin dashboard
-- [ ] Auditoria completa de logs
+- [ ] Structured logging (JSON format)
 - [ ] API Key authentication
-- [ ] WebAuthn/Biometrics
-- [ ] IP whitelisting
-
----
-
-## Resumo Estatístico
-
-- **Total de arquivos**: 35
-- **Linhas de código Python**: ~1200
-- **Testes unitários**: 8
-- **Endpoints implementados**: 7
-- **Modelos de banco**: 4
-- **Dependências principais**: 5
-- **Dependências dev**: 5
-
----
-
-## Conclusão
-
-O projeto **Auth System PRO** está **100% funcional** e pronto para:
-✅ Desenvolvimento local
-✅ Testes
-✅ Deploy com Docker
-✅ Extensão com novos recursos
-
-Todos os requisitos foram atendidos com qualidade profissional!
