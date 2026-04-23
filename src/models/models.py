@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 
 
 class User(SQLModel, table=True):
-    __tablename__ = "user"
+    """User model — stores account credentials and metadata."""
+    __tablename__ = "users"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     email: str = Field(unique=True, index=True)
@@ -13,6 +14,7 @@ class User(SQLModel, table=True):
     role: str = Field(default="user")
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     refresh_tokens: list["RefreshToken"] = Relationship(back_populates="user")
     password_reset_tokens: list["PasswordResetToken"] = Relationship(back_populates="user")
@@ -20,42 +22,45 @@ class User(SQLModel, table=True):
 
 
 class RefreshToken(SQLModel, table=True):
-    __tablename__ = "refresh_token"
+    """Refresh token model — stores hashed tokens for session management."""
+    __tablename__ = "refresh_tokens"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    user_id: UUID = Field(foreign_key="user.id")
+    user_id: UUID = Field(foreign_key="users.id")
     token_hash: str
-    revogado: bool = Field(default=False)
-    expira_em: datetime
+    is_revoked: bool = Field(default=False)
+    expires_at: datetime
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
-    criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     user: User = Relationship(back_populates="refresh_tokens")
 
 
 class PasswordResetToken(SQLModel, table=True):
-    __tablename__ = "password_reset_token"
+    """Password reset token model."""
+    __tablename__ = "password_reset_tokens"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    user_id: UUID = Field(foreign_key="user.id")
+    user_id: UUID = Field(foreign_key="users.id")
     token_hash: str
-    usado: bool = Field(default=False)
-    expira_em: datetime
-    criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_used: bool = Field(default=False)
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     user: User = Relationship(back_populates="password_reset_tokens")
 
 
 class ActivityLog(SQLModel, table=True):
-    __tablename__ = "activity_log"
+    """Activity log model — audit trail for user actions."""
+    __tablename__ = "activity_logs"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    user_id: UUID = Field(foreign_key="user.id")
+    user_id: UUID | None = Field(default=None, foreign_key="users.id")
     action: str
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
     status: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    user: User = Relationship(back_populates="activity_logs")
+    user: User | None = Relationship(back_populates="activity_logs")
