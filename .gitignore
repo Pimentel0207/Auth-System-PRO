@@ -52,8 +52,8 @@ env/
 .coverage
 htmlcov/
 
-# Alembic
-versions/
-
 # Docker
 *.log
+
+# Gemini
+.gemini/

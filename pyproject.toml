@@ -4,18 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "auth-system-pro"
-version = "0.1.0"
+version = "0.2.0"
 description = "Professional Authentication System built with FastAPI and SQLModel"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]==0.115.1",
     "sqlmodel==0.0.22",
     "asyncpg==0.31.0",
+    "greenlet>=3.0.0",
     "alembic==1.14.0",
     "argon2-cffi==23.2.0",
     "PyJWT==2.10.1",
     "python-dotenv==1.0.1",
     "pydantic-settings==2.4.0",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +33,10 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E711"]
 
 [tool.mypy]
 python_version = "3.12"
