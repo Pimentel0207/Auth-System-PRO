@@ -1,8 +1,7 @@
-version: "3.9"
-
 services:
   api:
     build: .
+    restart: unless-stopped
     ports:
       - "8000:8000"
     env_file: .env
@@ -10,9 +9,12 @@ services:
       db:
         condition: service_healthy
     command: fastapi run src/main.py --host 0.0.0.0 --port 8000
+    networks:
+      - auth_network
 
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: auth_user
       POSTGRES_PASSWORD: auth_pass
@@ -26,6 +28,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - auth_network
 
 volumes:
   postgres_data:
+
+networks:
+  auth_network:
+    driver: bridge
